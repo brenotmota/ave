@@ -1,0 +1,23 @@
+{
+  "expo": {
+    "name": "Breno & Rosa",
+    "slug": "breno-rosa-mood",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#FFF0F5"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.breno.rosamood"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#FFF0F5"
+      },
+      "package": "com.breno.rosamood"
+    }
+  }
+}
