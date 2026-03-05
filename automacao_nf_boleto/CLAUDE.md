@@ -8,11 +8,11 @@ Leia-o antes de qualquer intervenção no projeto.
 ## Visão Geral do Fluxo
 
 ```
-WhatsApp (cliente)
+Telegram (cliente) — @Chacaraejardimbot
     │
     ▼
 Webhook Flask  (app.py)
-    │  recebe mensagem, extrai CNPJ/dados
+    │  recebe mensagem, extrai CNPJ/dados via parse_mensagem()
     ▼
 automacao.py   (orquestra tudo)
     ├── Playwright → ISS (emite NF)
@@ -21,7 +21,7 @@ automacao.py   (orquestra tudo)
 ```
 
 O ponto de entrada de produção é o **webhook Flask** (`app.py`).
-O `automacao.py` é chamado por ele e executa as três etapas em sequência.
+O `automacao.py` é chamado por ele em uma thread separada e executa as três etapas em sequência.
 
 ---
 
@@ -30,7 +30,7 @@ O `automacao.py` é chamado por ele e executa as três etapas em sequência.
 ```
 automacao_nf_boleto/
 ├── CLAUDE.md            # Este arquivo — contexto do projeto
-├── app.py               # Servidor Flask: recebe webhook WhatsApp, chama automacao.py
+├── app.py               # Servidor Flask: recebe webhook Telegram, chama automacao.py
 ├── automacao.py         # Orquestrador principal do fluxo NF → Boleto → Drive
 ├── iss_nf.py            # Módulo Playwright para emissão de NF no portal ISS
 ├── cora_boleto.py       # Módulo para geração de boleto via API Cora (mTLS)
@@ -123,20 +123,22 @@ CORA_CLIENT_SECRET=...
 GDRIVE_FOLDER_ID=...
 GSHEET_ID=...
 
-# WhatsApp
-WHATSAPP_TOKEN=...
-WHATSAPP_VERIFY_TOKEN=...
-WHATSAPP_PHONE_ID=...
+# Telegram
+TELEGRAM_TOKEN=...              # Token do @BotFather
+TELEGRAM_CHAT_ID=...            # (opcional) restringe a um chat_id específico
 ```
 
 ---
 
 ## Próximos Passos Pendentes
 
-- [ ] **Webhook WhatsApp**: configurar URL pública (ngrok em dev, domínio próprio em prod) e registrar no Meta Business Manager.
-- [ ] Validação de entrada no webhook: checar se a mensagem é do número autorizado antes de disparar automação.
+- [ ] **Registrar webhook Telegram**: chamar `setWebhook` apontando para a URL pública do servidor.
+      ```
+      https://api.telegram.org/bot<TOKEN>/setWebhook?url=https://SEU_DOMINIO/webhook/<TOKEN>
+      ```
+- [ ] Implementar `automacao.py` e integrá-lo ao `app.py` via callback de progresso.
 - [ ] Retry automático em caso de falha no ISS (timeout de rede).
-- [ ] Notificação de erro via WhatsApp de volta ao usuário quando a automação falha.
+- [ ] Notificação de erro via Telegram de volta ao usuário quando a automação falha.
 - [ ] Testes de integração com o sandbox da Cora.
 
 ---
@@ -153,8 +155,11 @@ playwright install chromium
 # 3. Rodar o Flask (desenvolvimento)
 flask --app app.py run --port 5000
 
-# 4. Expor via ngrok para testar webhook WhatsApp
+# 4. Expor via ngrok para registrar o webhook Telegram
 ngrok http 5000
+
+# 5. Registrar webhook no Telegram (só precisa fazer uma vez por URL)
+curl "https://api.telegram.org/bot$TELEGRAM_TOKEN/setWebhook?url=https://SEU_NGROK/webhook/$TELEGRAM_TOKEN"
 ```
 
 ---

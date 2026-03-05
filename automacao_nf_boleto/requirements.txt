@@ -1,0 +1,8 @@
+flask>=3.0
+python-dotenv>=1.0
+pyTelegramBotAPI>=4.18
+httpx[http2]>=0.27
+playwright>=1.44
+google-auth>=2.30
+google-auth-httplib2>=0.2
+google-api-python-client>=2.130
