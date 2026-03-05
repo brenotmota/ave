@@ -136,7 +136,7 @@ TELEGRAM_CHAT_ID=...            # (opcional) restringe a um chat_id específico
       ```
       https://api.telegram.org/bot<TOKEN>/setWebhook?url=https://SEU_DOMINIO/webhook/<TOKEN>
       ```
-- [ ] Implementar `automacao.py` e integrá-lo ao `app.py` via callback de progresso.
+- [x] Implementar `automacao.py` e integrá-lo ao `app.py` via callback de progresso.
 - [ ] Retry automático em caso de falha no ISS (timeout de rede).
 - [ ] Notificação de erro via Telegram de volta ao usuário quando a automação falha.
 - [ ] Testes de integração com o sandbox da Cora.

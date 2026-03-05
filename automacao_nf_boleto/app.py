@@ -106,11 +106,13 @@ def handle_message(message):
 
 
 def rodar_automacao(chat_id: int, dados: dict):
+    from automacao import executar
+
+    def callback(msg: str):
+        bot.send_message(chat_id, msg, parse_mode="Markdown")
+
     try:
-        # TODO: importar e chamar o orquestrador principal
-        # from automacao import executar
-        # executar(dados, callback=lambda msg: bot.send_message(chat_id, msg))
-        bot.send_message(chat_id, "Automação concluída com sucesso!")
+        executar(dados, callback=callback)
     except Exception as e:
         bot.send_message(chat_id, f"Erro na automação: {e}")
 
