@@ -22,6 +22,7 @@ ISS_USER = os.getenv("ISS_USER", "")
 ISS_PASS = os.getenv("ISS_PASS", "")
 
 TIMEOUT = 30_000  # ms — portal ISS é lento, não reduza
+MAX_RETRIES = 3    # tentativas totais antes de desistir
 DOWNLOAD_DIR = Path("downloads")
 DOWNLOAD_DIR.mkdir(exist_ok=True)
 
@@ -78,21 +79,8 @@ def _valor_para_numerico(valor: str) -> str:
 # Função pública
 # ---------------------------------------------------------------------------
 
-async def emitir_nf(cnpj: str, valor: str, descricao: str) -> str:
-    """
-    Emite NF no portal ISS municipal via Playwright.
-
-    Parâmetros:
-        cnpj      – CNPJ do tomador (formatado ou só dígitos)
-        valor     – valor do serviço, ex: '1.500,00' ou '1500,00'
-        descricao – descrição/discriminação do serviço
-
-    Retorna o caminho local do PDF da NF gerada.
-    Lança PlaywrightError em caso de falha.
-    """
-    cnpj_digits = _apenas_digitos(cnpj)
-    valor_numerico = _valor_para_numerico(valor)
-
+async def _emitir_nf_uma_vez(cnpj_digits: str, valor_numerico: str, descricao: str) -> str:
+    """Tenta emitir a NF uma única vez. Lançada exceção em qualquer falha."""
     async with async_playwright() as pw:
         browser = await pw.chromium.launch(headless=True)
         context = await browser.new_context(accept_downloads=True)
@@ -131,3 +119,34 @@ async def emitir_nf(cnpj: str, valor: str, descricao: str) -> str:
         await browser.close()
 
     return pdf_path
+
+
+async def emitir_nf(cnpj: str, valor: str, descricao: str) -> str:
+    """
+    Emite NF no portal ISS municipal via Playwright.
+
+    Tenta até MAX_RETRIES vezes com backoff exponencial (2 s, 4 s, 8 s…)
+    em caso de erros de rede ou timeout do portal.
+
+    Parâmetros:
+        cnpj      – CNPJ do tomador (formatado ou só dígitos)
+        valor     – valor do serviço, ex: '1.500,00' ou '1500,00'
+        descricao – descrição/discriminação do serviço
+
+    Retorna o caminho local do PDF da NF gerada.
+    Lança a última exceção após esgotar as tentativas.
+    """
+    cnpj_digits = _apenas_digitos(cnpj)
+    valor_numerico = _valor_para_numerico(valor)
+    ultimo_erro: Exception | None = None
+
+    for tentativa in range(1, MAX_RETRIES + 1):
+        try:
+            return await _emitir_nf_uma_vez(cnpj_digits, valor_numerico, descricao)
+        except Exception as e:
+            ultimo_erro = e
+            if tentativa < MAX_RETRIES:
+                espera = 2 ** tentativa  # 2 s, 4 s, 8 s
+                await asyncio.sleep(espera)
+
+    raise ultimo_erro

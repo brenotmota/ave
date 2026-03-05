@@ -35,12 +35,18 @@ def executar(dados: dict, callback: Callable[[str], None] | None = None) -> dict
 
     # Etapa 1 — NF no portal ISS
     notify("*Etapa 1/3* — Emitindo NF no portal ISS...")
-    nf_pdf = asyncio.run(emitir_nf(cnpj=cnpj, valor=valor, descricao=descricao))
-    notify(f"NF emitida. PDF salvo em `{nf_pdf}`")
+    try:
+        nf_pdf = asyncio.run(emitir_nf(cnpj=cnpj, valor=valor, descricao=descricao))
+    except Exception as e:
+        raise RuntimeError(f"Falha ao emitir NF no ISS: {e}") from e
+    notify(f"NF emitida.")
 
     # Etapa 2 — Boleto Cora
     notify("*Etapa 2/3* — Gerando boleto na Cora...")
-    boleto = gerar_boleto(cnpj=cnpj, valor=valor, descricao=descricao, nf_pdf=nf_pdf)
+    try:
+        boleto = gerar_boleto(cnpj=cnpj, valor=valor, descricao=descricao, nf_pdf=nf_pdf)
+    except Exception as e:
+        raise RuntimeError(f"Falha ao gerar boleto na Cora: {e}") from e
     notify(
         f"Boleto criado.\n"
         f"  Vencimento: {boleto['vencimento']}\n"
@@ -49,14 +55,17 @@ def executar(dados: dict, callback: Callable[[str], None] | None = None) -> dict
 
     # Etapa 3 — Google Drive + Sheets
     notify("*Etapa 3/3* — Registrando no Google Drive e Sheets...")
-    links = registrar_e_enviar(
-        cnpj=cnpj,
-        valor=valor,
-        descricao=descricao,
-        nf_pdf=nf_pdf,
-        boleto_pdf=boleto.get("pdf_path"),
-        boleto_url=boleto.get("url", ""),
-    )
+    try:
+        links = registrar_e_enviar(
+            cnpj=cnpj,
+            valor=valor,
+            descricao=descricao,
+            nf_pdf=nf_pdf,
+            boleto_pdf=boleto.get("pdf_path"),
+            boleto_url=boleto.get("url", ""),
+        )
+    except Exception as e:
+        raise RuntimeError(f"Falha ao registrar no Google Drive/Sheets: {e}") from e
 
     resultado = {
         **links,

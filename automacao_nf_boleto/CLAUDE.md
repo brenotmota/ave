@@ -132,14 +132,22 @@ TELEGRAM_CHAT_ID=...            # (opcional) restringe a um chat_id específico
 
 ## Próximos Passos Pendentes
 
-- [ ] **Registrar webhook Telegram**: chamar `setWebhook` apontando para a URL pública do servidor.
+- [ ] **Registrar webhook Telegram** *(passo manual — requer URL pública)*:
+      ```bash
+      # Em dev: expor com ngrok
+      ngrok http 5000
+      # Copiar a URL HTTPS gerada (ex: https://abc123.ngrok-free.app) e rodar:
+      curl "https://api.telegram.org/bot$TELEGRAM_TOKEN/setWebhook" \
+           -d "url=https://abc123.ngrok-free.app/webhook/$TELEGRAM_TOKEN"
+
+      # Verificar se registrou corretamente:
+      curl "https://api.telegram.org/bot$TELEGRAM_TOKEN/getWebhookInfo"
       ```
-      https://api.telegram.org/bot<TOKEN>/setWebhook?url=https://SEU_DOMINIO/webhook/<TOKEN>
-      ```
+      Em produção substituir a URL ngrok pelo domínio real (HTTPS obrigatório).
 - [x] Implementar `automacao.py` e integrá-lo ao `app.py` via callback de progresso.
-- [ ] Retry automático em caso de falha no ISS (timeout de rede).
-- [ ] Notificação de erro via Telegram de volta ao usuário quando a automação falha.
-- [ ] Testes de integração com o sandbox da Cora.
+- [x] Retry automático em caso de falha no ISS — backoff exponencial (2 s, 4 s, 8 s), até 3 tentativas (`MAX_RETRIES` em `iss_nf.py`).
+- [x] Notificação de erro via Telegram — cada etapa lança `RuntimeError` com contexto; `app.py` captura e envia a mensagem ao usuário.
+- [ ] Testes de integração com o sandbox da Cora — arquivo criado em `tests/test_cora_sandbox.py`; requer credenciais sandbox configuradas no `.env`.
 
 ---
 
